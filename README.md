@@ -1,6 +1,6 @@
 # UserRegistryService (.NET 8 | Clean Architecture | CQRS | PostgreSQL)
 
-This microservice is designed to **register and validate usernames and account IDs** in a **multi-tenant** game environment. It ensures:
+This microservice is designed to **register and validate usernames and account IDs** in a **multi-tenant** environment. It ensures:
 
 * ✅ Each username is unique
 * ✅ One username per account (System.Guid)
