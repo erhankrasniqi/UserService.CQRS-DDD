@@ -1,44 +1,64 @@
-# 👨‍💻 UserService - Username Registry Microservice
+# UserRegistryService (.NET 8 | Clean Architecture | CQRS | PostgreSQL)
 
-A robust .NET 6 microservice for managing **unique usernames and account IDs**, built using **Clean Architecture**, **Domain-Driven Design (DDD)**, **CQRS with MediatR**, and supporting **multi-tenancy**.
+This microservice is designed to **register and validate usernames and account IDs** in a **multi-tenant** game environment. It ensures:
 
-> ✅ Built for high-scale systems handling 1M+ users with strict uniqueness requirements
-
----
-
-## 🧩 Features
-
-* ✅ Register unique usernames with associated account IDs (`Guid`)
-* ✅ Enforce one username per account and vice versa
-* ✅ Validate username rules (length, format, etc.)
-* ✅ Replace previous username when account changes it
-* ✅ Expose `GET` and `POST` REST APIs
-* ✅ Designed for scalability, modularity, and testability
+* ✅ Each username is unique
+* ✅ One username per account (System.Guid)
+* ✅ Username constraints (6–30 chars, alphanumeric only)
+* ✅ Full support for validation, creation, deletion, and testing
 
 ---
 
-## 🏗️ Architecture Overview
+## 🧱 Architecture Overview
 
-This microservice follows **Clean Architecture** principles:
+* **.NET 8** with **ASP.NET Core Web API**
+* **Clean Architecture** with layered separation
+* **Domain-Driven Design (DDD)**
+* **CQRS** pattern with **MediatR**
+* **Factory Method** for consistent domain creation
+* **xUnit + Moq** for unit testing
+* **PostgreSQL** for persistence
+* **Entity Framework Core** as ORM
+* **INotifier** interface for future domain event notifications
+* **TenantId** support for **multi-tenant architecture**
+
+---
+
+## 📆 Technologies
+
+| Layer          | Stack                                         |
+| -------------- | --------------------------------------------- |
+| API            | ASP.NET Core 8                                |
+| Application    | CQRS, MediatR                                 |
+| Domain         | DDD, AggregateRoot                            |
+| Infrastructure | PostgreSQL, EF Core, UnitOfWork, Repositories |
+| Tests          | xUnit, Moq                                    |
+| Eventing       | INotifier abstraction                         |
+
+--- 
+ 
+## 📁 Project Structure
 
 ```
-├── Domain               --> Entities, ValueObjects, Enums
-├── Application          --> CQRS Commands, Queries, Interfaces, Responses
-├── Infrastructure       --> EF Core DbContext, Repositories, Notifiers
-├── API                  --> Controllers (REST endpoints), Middlewares
-├── Tests                --> xUnit unit tests for command handlers
+UserService/
+├── API/
+│   └── Controllers/
+├── Application/
+│   ├── Features/
+│   └── Responses/
+├── Domain/
+│   └── Aggregates/
+├── Infrastructure/
+│   ├── Repositories/
+│   └── Database/
+├── SharedKernel/
+├── Tests/
+│   └── CreateUserTest.cs
 ```
 
-**Key Patterns Applied:**
 
-* ✅ **CQRS** (Command Query Responsibility Segregation)
-* ✅ **MediatR** for in-process messaging
-* ✅ **DDD** (with aggregates & invariants)
-* ✅ **Factory Method** used in aggregate root creation
-* ✅ **Unit of Work** and repository pattern
-* ✅ **INotifier** abstraction for domain event publishing (decoupled)
 
----
+
 
 ## 🌐 Multi-Tenancy Support
 
@@ -52,129 +72,94 @@ Each user record includes a `TenantId` (type `string`) that uniquely identifies 
 
 ---
 
+## 🥪 Testing
+
+Unit tests are implemented using `xUnit` and `Moq`. These cover:
+
+* ✅ Successful user creation
+* ✅ Username conflict validation
+* ✅ Replacing old username when `AccountId` exists
+
+---
+
+## 🧰 EF Core & PostgreSQL Setup
+
+Make sure you have the PostgreSQL connection string in `appsettings.json`:
+
+```json
+"ConnectionStrings": {
+  "DbConnection": "Host=localhost;Port=5432;Database=WitsDB;Username=admin;Password=admin"
+}
+```
+
+Then run:
+
+```bash
+# Create migration
+dotnet ef migrations add InitialCreate --project UserService.Infrastructure --startup-project UserService.API
+
+# Apply migration to DB
+dotnet ef database update --project UserService.Infrastructure --startup-project UserService.API
+```
+
+> ℹ️ Make sure the EF CLI is installed:
+
+```bash
+dotnet tool install --global dotnet-ef
+```
+
+---
+
+## ✨ How to Run
+
+```bash
+# In terminal
+dotnet build
+dotnet run --project UserService.API
+```
+
+The Swagger UI will be available at:
+`https://localhost:5001/swagger`
+
+---
+
+
+
+---
+ 
+
+## 📃 Example API Usage
+
+```http
+POST /api/users
+Content-Type: application/json
+
+{
+  "accountId": "fdc14e26-a29f-420b-930e-213c1be26f3e",
+  "username": "PlayerOne123",
+  "tenantId": "game-server-01"
+}
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "message": "User created successfully.",
+  "result": 1
+}
+```
+
 ## 🔐 Authentication & External Integration
 
 > ⚠️ This service assumes that authentication and authorization are handled externally by a dedicated **AuthService** or API Gateway. It focuses solely on **username registration logic**.
 
 ---
 
-## 📦 Technologies
+## 📓 Author
 
-* [.NET 6](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
-* [Entity Framework Core (PostgreSQL)](https://www.npgsql.org/efcore/)
-* [MediatR](https://github.com/jbogard/MediatR)
-* [xUnit](https://xunit.net/)
-* [Swagger / OpenAPI](https://swagger.io/)
+Made with ❤️ by Erhan Krasniqi
 
----
 
-## 📘 API Endpoints
-
-### ✅ POST /api/users
-
-Creates or updates a username for the given accountId.
-
-```json
-{
-  "accountId": "2e3bcb6a-1e9a-4b58-b26c-1fb4cd3224e9",
-  "username": "Erhan123",
-  "tenantId": "tenant-01"
-}
-```
-
-**Behavior:**
-
-* If username exists under a different account → returns error
-* If account already exists → deletes old username and replaces it
-
----
-
-### 🔍 GET /api/users
-
-Returns all registered usernames per tenant.
-
-(Optionally extendable to include username validation endpoint)
-
----
-
-## ✅ Username Validation Rules
-
-Applied in domain aggregate:
-
-* Required
-* Length between **6 and 30 characters**
-* Must be **alphanumeric**
-
-```csharp
-if (string.IsNullOrWhiteSpace(Username))
-if (Username.Length < 6 || Username.Length > 30)
-if (!Username.All(char.IsLetterOrDigit))
-```
-
----
-
-## 🧪 Unit Testing
-
-Unit tests are written using **xUnit** and **Moq**, covering scenarios such as:
-
-* ✅ Valid creation
-* ❌ Username already exists for another account
-* ✅ Username replace for same account
-
-```csharp
-[Fact]
-public async Task CreateUser_Should_Return_Success_When_Valid() { /* ... */ }
-```
-
----
-
-## 🗃️ Database
-
-* Using **PostgreSQL** (fast, free, production-grade)
-* User table includes unique index on both `Username` and `AccountId`
-
-```csharp
-modelBuilder.Entity<Users>()
-  .HasIndex(u => u.AccountId).IsUnique();
-```
-
----
-
-## 🚀 Getting Started
-
-```bash
-# Apply DB migrations
-> dotnet ef database update
-
-# Run the API
-> dotnet run --project src/UserService.API
-```
-
----
-
-## 📁 Repo Structure
-
-```
-/src
-  /UserService.API           --> REST endpoints
-  /UserService.Application   --> CQRS logic
-  /UserService.Domain        --> Core business model
-  /UserService.Infrastructure --> DbContext, Repos
-/tests
-  /UserService.Tests         --> xUnit test project
-```
-
----
-
-## 📌 Final Notes
-
-* Built to scale beyond 1M users
-* Easily extendable with Redis cache, Kafka events, etc.
-* All dependencies are registered via **DependencyInjection.cs**
-* Make sure to provide your PostgreSQL connection string in `appsettings.json`
-
----
-
-## 🛠️ Author
-
-Developed by **Erhan Krasniqi** as part of a Full Stack (.NET/Angular) coding challenge.
+ 
